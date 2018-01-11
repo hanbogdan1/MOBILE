@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "763507432929",
+    "firebase_url": "https://mobilefacultate.firebaseio.com",
+    "project_id": "mobilefacultate",
+    "storage_bucket": "mobilefacultate.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:763507432929:android:f3daa703847d1409",
+        "android_client_info": {
+          "package_name": "com.example.bogdan.aplicatiemobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "763507432929-in0jmgrphjghk8ept5f9hs1l6gmv4iu2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6uxaz29wHf601BcbDTOGqPbiURfB2hJs"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
