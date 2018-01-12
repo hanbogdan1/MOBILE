@@ -1,9 +1,12 @@
 package com.example.bogdan.aplicatiemobile;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +20,13 @@ import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -40,71 +50,47 @@ public class AfterLoginActivity extends AppCompatActivity
     private static int page_number = 1;
     private static final int topics_by_page = 25;
     private Response response;
-    private CustomAdapter customAdapter;
+
+    private CustomAdapter customAdapter= new CustomAdapter();
+    ProgressBar progressBar ;
+    ListView list ;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_after_login);
 
+        progressBar = (ProgressBar) findViewById(R.id.progressBarDashBoard);
+
+
         Username = getIntent().getStringExtra("USER_NAME");
         response = new Response();
-        customAdapter = new CustomAdapter();
 
-        try {
-            getRequest("https://www.reddit.com/r/popular/.json?");
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        list = (ListView) findViewById(R.id.ListViewMostPopular);
+        list.setAdapter(customAdapter);
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
 
-//        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-//        setSupportActionBar(toolbar);
-
-//        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-//        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-//                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-
-//        drawer.addDrawerListener(toggle);
-//        toggle.syncState();
-
-//        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-//        navigationView.setNavigationItemSelectedListener(this);
-
-        final ListView list = (ListView) findViewById(R.id.ListViewMostPopular);
-        list.setAdapter(customAdapter);
-
-        list.setOnScrollListener(new AbsListView.OnScrollListener() {
+        new Handler().postDelayed(new Runnable() {
             @Override
-            public void onScrollStateChanged(AbsListView view, int scrollState) {
-                if (scrollState == AbsListView.OnScrollListener.SCROLL_STATE_IDLE
-                        && (list.getLastVisiblePosition() - list.getHeaderViewsCount() -
-                        list.getFooterViewsCount()) >= (response.get_size() - 1)) {
+            public void run() {
+                Toast.makeText(AfterLoginActivity.this, "Before call in run! ", Toast.LENGTH_LONG).show();
 
-                        page_number ++;
-                        response.setCount(response.getCount() + topics_by_page);
-
-                    try {
-                        getRequest("https://www.reddit.com/r/popular/.json?count=" + response.getCount().toString() + "&after=" + response.getLast_id() );
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
+                getRequest();
+                progressBar.setVisibility(View.INVISIBLE);
+                customAdapter.notifyDataSetChanged();
             }
+        }, 2000);
 
-            @Override
-            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-
-            }
-        });
     }
 
     @Override
@@ -117,65 +103,68 @@ public class AfterLoginActivity extends AppCompatActivity
 
     }
 
-    private void getRequest(String urlString) throws IOException, JSONException {
+    private void getRequest() {
 
-        ProgressBar progressBar = (ProgressBar) findViewById(R.id.progressBarDashBoard);
-        progressBar.setVisibility(View.VISIBLE);
+        Thread thrd = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    HttpGet httppost = new HttpGet("https://www.reddit.com/r/popular/.json?");
+                    HttpClient httpclient = new DefaultHttpClient();
+                    HttpResponse responseHttp = httpclient.execute(httppost);
 
-        HttpURLConnection urlConnection = null;
-        URL url = null;
-        StringBuilder sb=null;
-        url = new URL(urlString);
-        urlConnection = (HttpURLConnection) url.openConnection();
-        urlConnection.setRequestMethod("GET");
-        urlConnection.setReadTimeout(100000 /* milliseconds */ );
-        urlConnection.setConnectTimeout(150000 /* milliseconds */ );
-        urlConnection.setDoOutput(true);
-        urlConnection.connect();
+                    // StatusLine stat = response.getStatusLine();
+                    int status = responseHttp.getStatusLine().getStatusCode();
+                    Log.v("STATUS HTTP:", "" + status);
+                    if (status == 200) {
+                        HttpEntity entity = responseHttp.getEntity();
+                        String data = EntityUtils.toString(entity);
+                        JSONObject jsono = new JSONObject(data);
+                        jsono = jsono.getJSONObject("data");
+                        response.setLast_id(jsono.getString("after"));
+                        JSONArray TopicsJson = jsono.getJSONArray("children");
 
-        BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
-         sb = new StringBuilder();
+                        for (int i = 0; i < TopicsJson.length(); i++) {
+                            Log.v("da", "New topic");
+                            Topic top = new Topic();
+                            JSONObject a = TopicsJson.getJSONObject(i);
+                            a = a.getJSONObject("data");
+//                            if (a.getString("likes").equals("null") || a.getString("likes").equals(null))
+//                                top.setLikes(0);
+//                            else
+//                                top.setLikes(Integer.parseInt(a.getString("likes").toString()));
 
-        String line;
-        while ((line = br.readLine()) != null) {
-            sb.append(line + "\n");
+                            top.setId_topic(a.getString("name"));
+                            top.setPicture_link(a.getString("url"));
+//                            top.setLink(a.getString("permalink"));
+                            top.setTitle(a.getString("title"));
+//
+//                            if (a.getString("num_comments").equals("null") || a.getString("num_comments").equals(null))
+//                                top.setComments(0);
+//                            else
+//                                top.setComments(Integer.parseInt(a.getString("num_comments").toString()));
+
+                            response.add_topic(top);
+                        }
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+
+                }
+            }
+
+        });
+
+        thrd.start();
+
+        try {
+            thrd.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-        br.close();
-        String jsonString = sb.toString();
-        System.out.println("JSON: " + jsonString);
-
-        JSONObject jsonRestp = new JSONObject(jsonString);
-        jsonRestp = jsonRestp.getJSONObject("data");
-        response.setLast_id(jsonRestp.getString("after"));
-        JSONArray TopicsJson = jsonRestp.getJSONArray("children");
-
-        for(int i=0;i<TopicsJson.length();i++){
-            Topic top = new Topic();
-            JSONObject a = TopicsJson.getJSONObject(i);
-            a = a.getJSONObject("data");
-            if (a.getString("likes").equals("null"))
-                top.setLikes(0);
-
-            top.setLikes(Integer.parseInt(a.getString("likes").toString()));
-
-            top.setId_topic(a.getString("name"));
-            top.setPicture_link(a.getString("url"));
-            top.setLink(a.getString("permalink"));
-            top.setTitle(a.getString("title"));
-
-            if (a.getString("num_comments").equals("null"))
-                top.setLikes(0);
-
-            top.setLikes(Integer.parseInt(a.getString("num_comments").toString()));
-
-            response.add_topic(top);
-        }
-
-        customAdapter.notifyDataSetChanged();
-        progressBar.setVisibility(View.INVISIBLE);
-
     }
-
     class CustomAdapter extends BaseAdapter {
         @Override
         public int getCount() {
@@ -184,7 +173,7 @@ public class AfterLoginActivity extends AppCompatActivity
 
         @Override
         public Object getItem(int position) {
-            return null;
+            return response.getTopics().get(position);
         }
 
         @Override
@@ -203,4 +192,5 @@ public class AfterLoginActivity extends AppCompatActivity
             return convertView;
         }
     }
+
 }
