@@ -76,6 +76,18 @@ public class AfterLoginActivity extends AppCompatActivity
         super.onResume();
     }
 
+    public void send_email(){
+        Intent i = new Intent(Intent.ACTION_SEND);
+        i.setType("message/rfc822");
+        i.putExtra(Intent.EXTRA_EMAIL  , new String[]{"recipient@example.com"});
+        i.putExtra(Intent.EXTRA_SUBJECT, "APLICATIE MOBILE");
+        i.putExtra(Intent.EXTRA_TEXT   , "Test email ! ");
+        try {
+            startActivity(Intent.createChooser(i, "Send mail..."));
+        } catch (android.content.ActivityNotFoundException ex) {
+            Toast.makeText(AfterLoginActivity.this, "There are no email clients installed.", Toast.LENGTH_SHORT).show();
+        }
+    }
     @Override
     protected void onStart() {
         super.onStart();
@@ -88,6 +100,7 @@ public class AfterLoginActivity extends AppCompatActivity
                 getRequest();
                 progressBar.setVisibility(View.INVISIBLE);
                 customAdapter.notifyDataSetChanged();
+                send_email();
             }
         }, 2000);
 
