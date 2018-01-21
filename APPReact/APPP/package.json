@@ -1,5 +1,5 @@
 {
-  "name": "my-app",
+  "name": "APPP",
   "version": "0.1.0",
   "private": true,
   "devDependencies": {
@@ -20,6 +20,8 @@
   },
   "dependencies": {
     "expo": "^23.0.4",
+    "firebase": "^4.8.2",
+    "native-base": "^2.3.6",
     "react": "16.0.0",
     "react-native": "0.50.3"
   }
